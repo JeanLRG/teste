@@ -1,0 +1,114 @@
+#include "tela.h"
+#include "tecla.h"
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
+// Função para aparecer uma mensagem na tela inicial
+void telainicial() {
+    tela_limpa();
+    printf("╔═════════════════════════════════════════════════════════════════════════════╗\n");
+    printf("║  ____  ___   ____  ___       ___    ____      __ __   ___ _     __ __  ____ ║\n");
+    printf("║ |    |/   \\ /    |/   \\     |   \\  /    |    |  |  | /  _] |   |  |  |/    |║\n");
+    printf("║ |__  |     |   __|     |    |    \\|  o  |    |  |  |/  [_| |   |  |  |  o  |║\n");
+    printf("║ __|  |  O  |  |  |  O  |    |  D  |     |    |  |  |    _] |___|  _  |     |║\n");
+    printf("║/  |  |     |  |_ |     |    |     |  _  |    |  :  |   [_|     |  |  |  _  |║\n");
+    printf("║\\  `  |     |     |     |    |     |  |  |     \\   /|     |     |  |  |  |  |║\n");
+    printf("║ \\____j\\___/|___,_|\\___/     |_____|__|__|      \\_/ |_____|_____|__|__|__|__|║\n");
+    printf("╚═════════════════════════════════════════════════════════════════════════════╝\n");
+    printf("Pressione enter para continuar...");
+    getchar();
+}
+
+// Função para fazer o tabuleiro aparecer na tela
+void imprime_tabuleiro(char tabuleiro[3][3]) {
+    tela_limpa();
+    printf("    1   2   3\n");
+    printf("  ╔═══╦═══╦═══╗\n");
+    printf("1 ║ %c ║ %c ║ %c ║\n", tabuleiro[0][0], tabuleiro[0][1], tabuleiro[0][2]);
+    printf("  ╠═══╬═══╬═══╣\n");
+    printf("2 ║ %c ║ %c ║ %c ║\n", tabuleiro[1][0], tabuleiro[1][1], tabuleiro[1][2]);
+    printf("  ╠═══╬═══╬═══╣\n");
+    printf("3 ║ %c ║ %c ║ %c ║\n", tabuleiro[2][0], tabuleiro[2][1], tabuleiro[2][2]);
+    printf("  ╚═══╩═══╩═══╝\n");
+}
+
+// Função principal
+int main() {
+    char tabuleiro[3][3];
+    char player;
+    int i, j, linha, coluna, rodada;
+    bool vencedor = false;
+
+    // Inicialização do programa
+    tela_ini();
+    tecla_ini();
+
+    // Retorna a função para mostrar a mensagem no início da execução
+    telainicial();
+
+    // Deixa o tabuleiro vazio
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 3; j++) {
+            tabuleiro[i][j] = ' ';
+        }
+    }
+
+    // Retorna a função para imprimir o tabuleiro
+    imprime_tabuleiro(tabuleiro);
+
+    vencedor = false;
+
+    // Vai mudando o jogador entre as rodadas
+    for (rodada = 1; rodada <= 9 && !vencedor; rodada++) {
+        if (rodada % 2 == 1) {
+            player = 'X';
+        } else {
+            player = 'O';
+        }
+
+        // Mostra na tela que o jogador deve fazer uma jogada
+        while (true) {
+            printf("Digite as coordenadas (de 1 a 3) separadas por espaço para posicionar o %c: ", player);
+            if (scanf("%d %d", &linha, &coluna) != 2) {
+                while (getchar() != '\n'); // Limpa o buffer do stdin
+                printf("Entrada inválida. Tente novamente!\n");
+                continue;
+            }
+            if (linha < 1 || linha > 3 || coluna < 1 || coluna > 3 || tabuleiro[linha-1][coluna-1] != ' ') {
+                printf("Jogada inválida. Tente novamente!\n");
+            } else {
+                break;
+            }
+        }
+        
+        tabuleiro[linha - 1][coluna - 1] = player;
+
+        imprime_tabuleiro(tabuleiro);
+
+        // Verifica se há um vencedor
+        for (i = 0; i < 3; i++) {
+            if ((tabuleiro[i][0] == player && tabuleiro[i][1] == player && tabuleiro[i][2] == player) ||
+                (tabuleiro[0][i] == player && tabuleiro[1][i] == player && tabuleiro[2][i] == player)) {
+                vencedor = true;
+                break;
+            }
+        }
+        if ((tabuleiro[0][0] == player && tabuleiro[1][1] == player && tabuleiro[2][2] == player) ||
+            (tabuleiro[0][2] == player && tabuleiro[1][1] == player && tabuleiro[2][0] == player)) {
+            vencedor = true;
+        }
+    }
+
+    // Mostra se há um vencedor e quem ganhou
+    if (!vencedor) {
+        printf("\nDeu velha!\n");
+    } else {
+        printf("\nJogador %c ganhou!\n", player);
+    }
+
+    // Finalização do programa
+    tecla_fim();
+    tela_fim();
+    return 0;
+}
