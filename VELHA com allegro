@@ -1,0 +1,130 @@
+#include "tela.h"
+#include "tecla.h"
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stddef.h>
+
+#define TAMANHO_TABULEIRO 3
+
+void telainicial() {
+    tela_altera_modo_saida();
+    tela_limpa();
+    printf("╔═════════════════════════════════════════════════════════════════════════════╗\n");
+    printf("║  ____  ___   ____  ___       ___    ____      __ __   ___ _     __ __  ____ ║\n");
+    printf("║ |    |/   \\ /    |/   \\     |   \\  /    |    |  |  | /  _] |   |  |  |/    |║\n");
+    printf("║ |__  |     |   __|     |    |    \\|  o  |    |  |  |/  [_| |   |  |  |  o  |║\n");
+    printf("║ __|  |  O  |  |  |  O  |    |  D  |     |    |  |  |    _] |___|  _  |     |║\n");
+    printf("║/  |  |     |  |_ |     |    |     |  _  |    |  :  |   [_|     |  |  |  _  |║\n");
+    printf("║\\  `  |     |     |     |    |     |  |  |     \\   /|     |     |  |  |  |  |║\n");
+    printf("║ \\____j\\___/|___,_|\\___/     |_____|__|__|      \\_/ |_____|_____|__|__|__|__|║\n");
+    printf("╚═════════════════════════════════════════════════════════════════════════════╝\n");
+    printf("Pressione enter para continuar...");
+    tecla_le_char();
+}
+
+void imprime_tabuleiro(char tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO], int cursor_x, int cursor_y) {
+    tela_limpa();
+    printf("    1   2   3\n");
+    printf("  ╔═══╦═══╦═══╗\n");
+    for (int i = 0; i < TAMANHO_TABULEIRO; ++i) {
+        printf("%d ║", i + 1);
+        for (int j = 0; j < TAMANHO_TABULEIRO; ++j) {
+            if (i == cursor_x && j == cursor_y) {
+                tela_mostra_cursor(true); // Mostra o cursor apenas na posição atual
+                printf(" %c", tabuleiro[i][j]);
+                tela_mostra_cursor(false); // Oculta o cursor após imprimir o caractere
+            } else {
+                printf(" %c", tabuleiro[i][j]);
+            }
+            printf(" ║");
+        }
+        printf("\n");
+        if (i < TAMANHO_TABULEIRO - 1) {
+            printf("  ╠═══╬═══╬═══╣\n");
+        }
+    }
+    printf("  ╚═══╩═══╩═══╝\n");
+    tela_atualiza();
+}
+
+bool verifica_vencedor(char tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO], char player) {
+    // Verifica linhas e colunas
+    for (int i = 0; i < TAMANHO_TABULEIRO; ++i) {
+        if ((tabuleiro[i][0] == player && tabuleiro[i][1] == player && tabuleiro[i][2] == player) ||
+            (tabuleiro[0][i] == player && tabuleiro[1][i] == player && tabuleiro[2][i] == player)) {
+            return true;
+        }
+    }
+
+    // Verifica diagonais
+    if ((tabuleiro[0][0] == player && tabuleiro[1][1] == player && tabuleiro[2][2] == player) ||
+        (tabuleiro[0][2] == player && tabuleiro[1][1] == player && tabuleiro[2][0] == player)) {
+        return true;
+    }
+
+    return false;
+}
+
+bool verifica_empate(char tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO]) {
+    // Verifica se ainda há espaços vazios no tabuleiro
+    for (int i = 0; i < TAMANHO_TABULEIRO; ++i) {
+        for (int j = 0; j < TAMANHO_TABULEIRO; ++j) {
+            if (tabuleiro[i][j] == ' ') {
+                return false; // Ainda há espaços vazios, não é empate
+            }
+        }
+    }
+    return true; // Tabuleiro está cheio, é empate
+}
+
+int main() {
+    char tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO] = {{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}};
+    int cursor_x = 0, cursor_y = 0;  // Posição inicial do cursor
+    bool vencedor = false;
+    char player = 'X';
+
+    tela_ini();
+    tecla_ini();
+
+    telainicial();
+    imprime_tabuleiro(tabuleiro, cursor_x, cursor_y);
+
+    while (!vencedor && !verifica_empate(tabuleiro)) {
+        char input = tecla_le_char();
+
+        if (input == 'w' && cursor_x > 0) {
+            cursor_x--;
+        } else if (input == 's' && cursor_x < TAMANHO_TABULEIRO - 1) {
+            cursor_x++;
+        } else if (input == 'a' && cursor_y > 0) {
+            cursor_y--;
+        } else if (input == 'd' && cursor_y < TAMANHO_TABULEIRO - 1) {
+            cursor_y++;
+        } else if (input == ' ') {
+            if (tabuleiro[cursor_x][cursor_y] == ' ') {
+                tabuleiro[cursor_x][cursor_y] = player;
+                player = (player == 'X') ? 'O' : 'X';
+                imprime_tabuleiro(tabuleiro, cursor_x, cursor_y);
+                
+                if (verifica_vencedor(tabuleiro, player)) {
+                    vencedor = true;
+                    break;
+                }
+            }
+        }
+
+        imprime_tabuleiro(tabuleiro, cursor_x, cursor_y);
+    }
+
+    if (!vencedor) {
+        printf("\nDeu velha!\n");
+    } else {
+        printf("\nJogador %c ganhou!\n", player);
+    }
+
+    tecla_fim();
+    tela_fim();
+
+    return 0;
+}
