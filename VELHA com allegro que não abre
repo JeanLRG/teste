@@ -1,0 +1,131 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <allegro5/allegro.h>
+#include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
+
+#define TAMANHO_TABULEIRO 3
+
+// Variáveis globais para Allegro
+ALLEGRO_DISPLAY *display = NULL;
+ALLEGRO_FONT *font = NULL;
+ALLEGRO_EVENT_QUEUE *event_queue = NULL;
+
+void tela_altera_modo_saida(void) {
+    // Inicializa a biblioteca Allegro
+    if (!al_init()) {
+        fprintf(stderr, "Falha ao inicializar o Allegro.\n");
+        exit(-1);
+    }
+
+    // Inicializa o addon de primitivas para desenhar na tela
+    if (!al_init_primitives_addon()) {
+        fprintf(stderr, "Falha ao inicializar o addon de primitivas.\n");
+        exit(-1);
+    }
+
+    // Inicializa o addon de fontes
+    if (!al_init_font_addon()) {
+        fprintf(stderr, "Falha ao inicializar o addon de fontes.\n");
+        exit(-1);
+    }
+
+    // Inicializa o addon de TTF (TrueType Font)
+    if (!al_init_ttf_addon()) {
+        fprintf(stderr, "Falha ao inicializar o addon de TTF.\n");
+        exit(-1);
+    }
+
+    // Cria a janela
+    display = al_create_display(640, 480);
+    if (!display) {
+        fprintf(stderr, "Falha ao criar a janela.\n");
+        exit(-1);
+    }
+
+    // Cria uma fonte
+    font = al_create_builtin_font();
+    if (!font) {
+        fprintf(stderr, "Falha ao criar a fonte.\n");
+        exit(-1);
+    }
+}
+
+void tela_limpa() {
+    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_flip_display();
+}
+
+void tela_mostra_cursor(bool mostra) {
+    if (mostra) {
+        al_show_mouse_cursor(display);
+    } else {
+        al_hide_mouse_cursor(display);
+    }
+}
+
+void tela_atualiza() {
+    al_flip_display();
+}
+
+char tecla_le_char() {
+    ALLEGRO_EVENT_QUEUE *event_queue = al_create_event_queue();
+    ALLEGRO_EVENT event;
+    char tecla = 0;
+
+    al_register_event_source(event_queue, al_get_keyboard_event_source());
+
+    al_wait_for_event(event_queue, &event);
+    if (event.type == ALLEGRO_EVENT_KEY_DOWN) {
+        tecla = event.keyboard.keycode;
+    }
+
+    al_destroy_event_queue(event_queue);
+    return tecla;
+}
+
+void telainicial() {
+    tela_altera_modo_saida();
+    tela_limpa();
+
+    al_draw_text(font, al_map_rgb(255, 255, 255), 320, 240, ALLEGRO_ALIGN_CENTRE,
+                 "╔═════════════════════════════════════════════════════════════════════════════╗\n"
+                 "║  ____  ___   ____  ___       ___    ____      __ __   ___ _     __ __  ____ ║\n"
+                 "║ |    |/   \\ /    |/   \\     |   \\  /    |    |  |  | /  _] |   |  |  |/    |║\n"
+                 "║ |__  |     |   __|     |    |    \\|  o  |    |  |  |/  [_| |   |  |  |  o  |║\n"
+                 "║ __|  |  O  |  |  |  O  |    |  D  |     |    |  |  |    _] |___|  _  |     |║\n"
+                 "║/  |  |     |  |_ |     |    |     |  _  |    |  :  |   [_|     |  |  |  _  |║\n"
+                 "║\\  `  |     |     |     |    |     |  |  |     \\   /|     |     |  |  |  |  |║\n"
+                 "║ \\____j\\___/|___,_|\\___/     |_____|__|__|      \\_/ |_____|_____|__|__|__|__|║\n"
+                 "╚═════════════════════════════════════════════════════════════════════════════╝\n"
+                 "Pressione enter para continuar...");
+    al_flip_display();
+    tecla_le_char();
+}
+
+void imprime_tabuleiro(char tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO], int cursor_x, int cursor_y) {
+    al_clear_to_color(al_map_rgb(0, 0, 0)); // Limpa a tela com cor preta
+
+    // Desenha o título "Jogo da Velha" no centro da tela
+    al_draw_text(font, al_map_rgb(255, 255, 255), 320, 20, ALLEGRO_ALIGN_CENTRE, "Jogo da Velha");
+
+    // Itera sobre o tabuleiro para desenhar as células
+    for (int i = 0; i < TAMANHO_TABULEIRO; ++i) {
+        for (int j = 0; j < TAMANHO_TABULEIRO; ++j) {
+            float x = 200 + j * 100; // Calcula a posição x baseada na coluna
+            float y = 100 + i * 100; // Calcula a posição y baseada na linha
+
+            // Desenha o retângulo da célula
+            al_draw_rectangle(x - 50, y - 50, x + 50, y + 50, al_map_rgb(255, 255, 255), 2);
+
+            // Desenha o conteúdo da célula (X, O ou espaço vazio)
+            al_draw_textf(font, al_map_rgb(255, 255, 255), x, y - 10, ALLEGRO_ALIGN_CENTRE, "%c", tabuleiro[i][j]);
+
+            // Se o cursor estiver nesta célula, desenha um retângulo preenchido em volta
+            if (i == cursor_x && j == cursor_y) {
+                al_draw_filled_rectangle(x - 50, y - 50, x + 50, y + 50, al_map_rgb(255, 0, 0));
+            }
+        }
+    }
