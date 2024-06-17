@@ -1,0 +1,248 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <allegro5/allegro.h>
+#include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
+
+#define TAMANHO_TABULEIRO 3
+
+// Variáveis globais para Allegro
+ALLEGRO_DISPLAY *display = NULL;
+ALLEGRO_FONT *font = NULL;
+ALLEGRO_EVENT_QUEUE *event_queue = NULL;
+
+void tela_altera_modo_saida(void) {
+    // Inicializa a biblioteca Allegro
+    if (!al_init()) {
+        fprintf(stderr, "Falha ao inicializar o Allegro.\n");
+        exit(-1);
+    }
+
+    // Inicializa o addon de primitivas para desenhar na tela
+    if (!al_init_primitives_addon()) {
+        fprintf(stderr, "Falha ao inicializar o addon de primitivas.\n");
+        exit(-1);
+    }
+
+    // Inicializa o addon de fontes
+    if (!al_init_font_addon()) {
+        fprintf(stderr, "Falha ao inicializar o addon de fontes.\n");
+        exit(-1);
+    }
+
+    // Inicializa o addon de TTF (TrueType Font)
+    if (!al_init_ttf_addon()) {
+        fprintf(stderr, "Falha ao inicializar o addon de TTF.\n");
+        exit(-1);
+    }
+
+    // Cria a janela
+    display = al_create_display(640, 480);
+    if (!display) {
+        fprintf(stderr, "Falha ao criar a janela.\n");
+        exit(-1);
+    }
+
+    // Cria uma fonte
+    font = al_create_builtin_font();
+    if (!font) {
+        fprintf(stderr, "Falha ao criar a fonte.\n");
+        exit(-1);
+    }
+
+    // Cria a fila de eventos
+    event_queue = al_create_event_queue();
+    if (!event_queue) {
+        fprintf(stderr, "Falha ao criar a fila de eventos.\n");
+        exit(-1);
+    }
+
+    // Registra fonte de eventos do teclado
+    al_register_event_source(event_queue, al_get_keyboard_event_source());
+
+    // Define o título da janela
+    al_set_window_title(display, "Jogo da Velha");
+
+    // Limpa a tela inicialmente
+    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_flip_display();
+}
+
+void tela_limpa() {
+    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_flip_display();
+}
+
+void tela_mostra_cursor(bool mostra) {
+    if (mostra) {
+        al_show_mouse_cursor(display);
+    } else {
+        al_hide_mouse_cursor(display);
+    }
+}
+
+void tela_atualiza() {
+    al_flip_display();
+}
+
+char tecla_le_char() {
+    ALLEGRO_EVENT event;
+
+    while (true) {
+        al_wait_for_event(event_queue, &event);
+
+        if (event.type == ALLEGRO_EVENT_KEY_DOWN) {
+            switch (event.keyboard.keycode) {
+                case ALLEGRO_KEY_UP:
+                    return 'w';
+                case ALLEGRO_KEY_DOWN:
+                    return 's';
+                case ALLEGRO_KEY_LEFT:
+                    return 'a';
+                case ALLEGRO_KEY_RIGHT:
+                    return 'd';
+                case ALLEGRO_KEY_ENTER:
+                    return ' ';
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+void telainicial() {
+    tela_altera_modo_saida();
+    tela_limpa();
+
+    al_draw_text(font, al_map_rgb(255, 255, 255), 320, 240, ALLEGRO_ALIGN_CENTRE,
+                 "╔═════════════════════════════════════════════════════════════════════════════╗\n"
+                 "║  ____  ___   ____  ___       ___    ____      __ __   ___ _     __ __  ____ ║\n"
+                 "║ |    |/   \\ /    |/   \\     |   \\  /    |    |  |  | /  _] |   |  |  |/    |║\n"
+                 "║ |__  |     |   __|     |    |    \\|  o  |    |  |  |/  [_| |   |  |  |  o  |║\n"
+                 "║ __|  |  O  |  |  |  O  |    |  D  |     |    |  |  |    _] |___|  _  |     |║\n"
+                 "║/  |  |     |  |_ |     |    |     |  _  |    |  :  |   [_|     |  |  |  _  |║\n"
+                 "║\\  `  |     |     |     |    |     |  |  |     \\   /|     |     |  |  |  |  |║\n"
+                 "║ \\____j\\___/|___,_|\\___/     |_____|__|__|      \\_/ |_____|_____|__|__|__|__|║\n"
+                 "╚═════════════════════════════════════════════════════════════════════════════╝\n"
+                 "Pressione enter para continuar...");
+    al_flip_display();
+    tecla_le_char();
+}
+
+void imprime_tabuleiro(char tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO], int cursor_x, int cursor_y) {
+    al_clear_to_color(al_map_rgb(0, 0, 0)); // Limpa a tela com cor preta
+
+    // Desenha o título "Jogo da Velha" no centro da tela
+    al_draw_text(font, al_map_rgb(255, 255, 255), 320, 20, ALLEGRO_ALIGN_CENTRE, "Jogo da Velha");
+
+    // Itera sobre o tabuleiro para desenhar as células
+    for (int i = 0; i < TAMANHO_TABULEIRO; ++i) {
+        for (int j = 0; j < TAMANHO_TABULEIRO; ++j) {
+            float x = 200 + j * 100; // Calcula a posição x baseada na coluna
+            float y = 100 + i * 100; // Calcula a posição y baseada na linha
+
+            // Desenha o retângulo da célula
+            al_draw_rectangle(x - 50, y - 50, x + 50, y + 50, al_map_rgb(255, 255, 255), 2);
+
+            // Desenha o conteúdo da célula (X, O ou espaço vazio)
+            al_draw_textf(font, al_map_rgb(255, 255, 255), x, y - 10, ALLEGRO_ALIGN_CENTRE, "%c", tabuleiro[i][j]);
+
+            // Se o cursor estiver nesta célula, desenha um retângulo preenchido em volta
+            if (i == cursor_x && j == cursor_y) {
+                al_draw_filled_rectangle(x - 50, y - 50, x + 50, y + 50, al_map_rgb(255, 0, 0));
+            }
+        }
+    }
+
+    tela_atualiza(); // Atualiza a tela após desenhar o tabuleiro
+}
+
+bool verifica_vencedor(char tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO], char player) {
+    // Verifica linhas e colunas
+    for (int i = 0; i < TAMANHO_TABULEIRO; ++i) {
+        if ((tabuleiro[i][0] == player && tabuleiro[i][1] == player && tabuleiro[i][2] == player) ||
+            (tabuleiro[0][i] == player && tabuleiro[1][i] == player && tabuleiro[2][i] == player)) {
+            return true;
+        }
+    }
+
+    // Verifica diagonais
+    if ((tabuleiro[0][0] == player && tabuleiro[1][1] == player && tabuleiro[2][2] == player) ||
+        (tabuleiro[0][2] == player && tabuleiro[1][1] == player && tabuleiro[2][0] == player)) {
+        return true;
+    }
+
+    return false;
+}
+
+int main() {
+    // Inicializa o Allegro e as bibliotecas necessárias
+    tela_altera_modo_saida();
+    tela_mostra_cursor(false);
+
+    // Variáveis para o tabuleiro e controle do cursor
+    char tabuleiro[TAMANHO_TABULEIRO][TAMANHO_TABULEIRO] = {{' ', ' ', ' '}, {' ', ' ', ' '}, {' ', ' ', ' '}};
+    int cursor_x = 0, cursor_y = 0;
+    char jogador_atual = 'X';
+
+    // Exibe a tela inicial
+    telainicial();
+
+    // Loop principal do jogo
+    while (true) {
+        // Imprime o tabuleiro na tela
+        imprime_tabuleiro(tabuleiro, cursor_x, cursor_y);
+
+        // Lê a tecla pressionada pelo jogador
+        char tecla = tecla_le_char();
+
+        // Move o cursor com base na tecla pressionada
+        switch (tecla) {
+            case 'w':
+                if (cursor_x > 0) cursor_x--;
+                break;
+            case 's':
+                if (cursor_x < TAMANHO_TABULEIRO - 1) cursor_x++;
+                break;
+            case 'a':
+                if (cursor_y > 0) cursor_y--;
+                break;
+            case 'd':
+                if (cursor_y < TAMANHO_TABULEIRO - 1) cursor_y++;
+                break;
+            case ' ':
+                // Coloca a marca do jogador atual na posição do cursor
+                if (tabuleiro[cursor_x][cursor_y] == ' ') {
+                    tabuleiro[cursor_x][cursor_y] = jogador_atual;
+
+                    // Verifica se o jogador atual venceu o jogo
+                    if (verifica_vencedor(tabuleiro, jogador_atual)) {
+                        // Exibe mensagem de vitória
+                        al_draw_textf(font, al_map_rgb(255, 255, 255), 320, 460, ALLEGRO_ALIGN_CENTRE,
+                                      "Jogador %c venceu! Pressione Enter para reiniciar.", jogador_atual);
+                        tela_atualiza();
+                        tecla_le_char();
+
+                        // Reinicia o tabuleiro
+                        for (int i = 0; i < TAMANHO_TABULEIRO; ++i) {
+                            for (int j = 0; j < TAMANHO_TABULEIRO; ++j) {
+                                tabuleiro[i][j] = ' ';
+                            }
+                        }
+                    } else {
+                        // Alterna o jogador atual
+                        jogador_atual = (jogador_atual == 'X') ? 'O' : 'X';
+                    }
+                }
+                break;
+        }
+    }
+
+    // Libera recursos do Allegro
+    al_destroy_display(display);
+    al_destroy_font(font);
+    al_destroy_event_queue(event_queue);
+
+    return 0;
+}
