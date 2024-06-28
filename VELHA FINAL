@@ -1,0 +1,204 @@
+#include "telag.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#define TAM 3
+#define LARGURA 1920
+#define ALTURA 1080
+
+char tabuleiro[TAM][TAM];
+char jogador_atual = 'X';
+int cursor_linha = 0, cursor_coluna = 0;
+
+// Inicializa o tabuleiro vazio
+void inicializa_tabuleiro() {
+    for (int i = 0; i < TAM; i++) {
+        for (int j = 0; j < TAM; j++) {
+            tabuleiro[i][j] = ' ';
+        }
+    }
+}
+
+// Desenha o tabuleiro e as peças
+void desenha_tabuleiro() {
+    tela_retangulo(0, 0, LARGURA, ALTURA, 2, vermelho, preto);
+
+    // Desenha as linhas do grid
+    tela_linha(LARGURA / 3, 0, LARGURA / 3, ALTURA, 2, branco);
+    tela_linha(2 * (LARGURA / 3), 0, 2 * (LARGURA / 3), ALTURA, 2, branco);
+    tela_linha(0, ALTURA / 3, LARGURA, ALTURA / 3, 2, branco);
+    tela_linha(0, 2 * (ALTURA / 3), LARGURA, 2 * (ALTURA / 3), 2, branco);
+
+    // Desenha as peças
+    for (int i = 0; i < TAM; i++) {
+        for (int j = 0; j < TAM; j++) {
+            if (tabuleiro[i][j] != ' ') {
+                int x = (LARGURA / 3) * j + (LARGURA / 6);
+                int y = (ALTURA / 3) * i + (ALTURA / 6);
+                char str[2] = {tabuleiro[i][j], '\0'};
+                tela_texto(x, y, 60, branco, str);
+            }
+        }
+    }
+
+    // Desenha o cursor
+    int cursor_x = (LARGURA / 3) * cursor_coluna + (LARGURA / 6);
+    int cursor_y = (ALTURA / 3) * cursor_linha + (ALTURA / 6);
+    tela_circulo(cursor_x, cursor_y, 10, 2, azul, azul);
+
+    tela_atualiza();
+}
+
+// Captura a entrada do jogador e move o cursor ou seleciona a posição
+bool captura_entrada() {
+    char tecla = tela_tecla();
+    switch (tecla) {
+        case 'w':
+            if (cursor_linha > 0) cursor_linha--;
+            break;
+        case 's':
+            if (cursor_linha < TAM - 1) cursor_linha++;
+            break;
+        case 'a':
+            if (cursor_coluna > 0) cursor_coluna--;
+            break;
+        case 'd':
+            if (cursor_coluna < TAM - 1) cursor_coluna++;
+            break;
+        case '\n':
+        case '\r':
+            if (tabuleiro[cursor_linha][cursor_coluna] == ' ') {
+                tabuleiro[cursor_linha][cursor_coluna] = jogador_atual;
+                return true;
+            }
+            break;
+    }
+    return false;
+}
+
+// Verifica se há um vencedor ou empate
+char verifica_vencedor() {
+    // Verifica linhas e colunas
+    for (int i = 0; i < TAM; i++) {
+        if (tabuleiro[i][0] == tabuleiro[i][1] && tabuleiro[i][1] == tabuleiro[i][2] && tabuleiro[i][0] != ' ') {
+            return tabuleiro[i][0];
+        }
+        if (tabuleiro[0][i] == tabuleiro[1][i] && tabuleiro[1][i] == tabuleiro[2][i] && tabuleiro[0][i] != ' ') {
+            return tabuleiro[0][i];
+        }
+    }
+    // Verifica diagonais
+    if (tabuleiro[0][0] == tabuleiro[1][1] && tabuleiro[1][1] == tabuleiro[2][2] && tabuleiro[0][0] != ' ') {
+        return tabuleiro[0][0];
+    }
+    if (tabuleiro[0][2] == tabuleiro[1][1] && tabuleiro[1][1] == tabuleiro[2][0] && tabuleiro[0][2] != ' ') {
+        return tabuleiro[0][2];
+    }
+    // Verifica empate
+    for (int i = 0; i < TAM; i++) {
+        for (int j = 0; j < TAM; j++) {
+            if (tabuleiro[i][j] == ' ') {
+                return ' '; // Jogo continua
+            }
+        }
+    }
+    return 'E'; // Empate
+}
+
+// Alterna entre os jogadores
+void alterna_jogador() {
+    jogador_atual = (jogador_atual == 'X') ? 'O' : 'X';
+}
+
+// Mensagem de início
+void texto_inicio(){
+    tela_texto(LARGURA / 2, ALTURA / 3, 60, azul, "JOGO DA VELHA");
+    tela_texto(LARGURA / 2, ALTURA / 2, 30, branco, "Pressione Enter para continuar...");
+    tela_atualiza();
+    while (tela_tecla() != '\n');
+}
+
+void tela_empate(){
+    tela_texto(LARGURA / 2, ALTURA / 2, 60, branco, "DEU VELHA");
+    tela_atualiza();
+    while (tela_tecla() != '\n');
+}
+
+void tela_vencedor_O(){
+    tela_texto(LARGURA / 2, ALTURA / 2, 60, verde, "JOGADOR O VENCEU");
+    tela_atualiza();
+    while (tela_tecla() != '\n');
+}
+
+void tela_vencedor_X(){
+    tela_texto(LARGURA / 2, ALTURA / 2, 60, verde, "JOGADOR X VENCEU");
+    tela_atualiza();
+    while (tela_tecla() != '\n');
+}
+
+void jogar_novamente(){
+    bool jogar = true;
+
+    while (jogar) {
+        tela_texto(LARGURA / 2, ALTURA / 2, 60, vermelho, "Deu velha");
+        tela_texto(LARGURA / 2, ALTURA / 3, 30, branco, "Jogar novamente (y/n)?");
+        tela_atualiza();
+
+        char resposta = tela_tecla();
+        if (resposta == 'n' || resposta == 'N') {
+            jogar = false;
+            break;
+        } else if (resposta == 'y' || resposta == 'Y') {
+            inicializa_tabuleiro();
+            jogador_atual = 'X';
+            cursor_linha = 0;
+            cursor_coluna = 0;
+            return;
+        }
+    }
+
+    tela_fim();
+    exit(0); // Saída do programa caso não deseje jogar novamente
+}
+
+int main() {
+    bool jogo_ativo = true;
+
+    tela_inicio(LARGURA, ALTURA, "Jogo da Velha");
+    inicializa_tabuleiro();
+
+    while (true) {
+        texto_inicio();
+        while (jogo_ativo) {
+            desenha_tabuleiro();
+            if (captura_entrada()) {
+                char vencedor = verifica_vencedor();
+                if (vencedor == 'X') {
+                    desenha_tabuleiro();
+                    tela_atualiza();
+                    tela_vencedor_X();
+                    jogo_ativo = false;
+                } else if (vencedor == 'O') {
+                    desenha_tabuleiro();
+                    tela_atualiza();
+                    tela_vencedor_O();
+                    jogo_ativo = false;
+                } else if (vencedor == 'E') {
+                    desenha_tabuleiro();
+                    tela_empate();
+                    jogar_novamente();
+                    inicializa_tabuleiro();
+                    jogador_atual = 'X';
+                    cursor_linha = 0;
+                    cursor_coluna = 0;
+                } else {
+                    alterna_jogador();
+                }
+            }
+        }
+    }
+
+    tela_fim();
+    return 0;
+}
