@@ -37,15 +37,21 @@ void desenha_tabuleiro() {
                 int x = (LARGURA / 3) * j + (LARGURA / 6);
                 int y = (ALTURA / 3) * i + (ALTURA / 6);
                 char str[2] = {tabuleiro[i][j], '\0'};
-                tela_texto(x, y, 60, branco, str);
+                if (tabuleiro[i][j] == 'X') {
+                    tela_texto(x, y, 60, azul, str);
+                } else {
+                    tela_texto(x, y, 60, vermelho, str);
+                }
             }
         }
     }
 
     // Desenha o cursor
-    int cursor_x = (LARGURA / 3) * cursor_coluna + (LARGURA / 6);
-    int cursor_y = (ALTURA / 3) * cursor_linha + (ALTURA / 6);
-    tela_circulo(cursor_x, cursor_y, 10, 2, azul, azul);
+    int cursor_x1 = (LARGURA / 3) * cursor_coluna;
+    int cursor_y1 = (ALTURA / 3) * cursor_linha;
+    int cursor_x2 = cursor_x1 + (LARGURA / 3);
+    int cursor_y2 = cursor_y1 + (ALTURA / 3);
+    tela_retangulo(cursor_x1, cursor_y1, cursor_x2, cursor_y2, 5, verde, transparente);
 
     tela_atualiza();
 }
@@ -70,6 +76,7 @@ bool captura_entrada() {
         case '\r':
             if (tabuleiro[cursor_linha][cursor_coluna] == ' ') {
                 tabuleiro[cursor_linha][cursor_coluna] = jogador_atual;
+                desenha_tabuleiro();
                 return true;
             }
             break;
@@ -113,7 +120,7 @@ void alterna_jogador() {
 
 // Mensagem de início
 void texto_inicio(){
-    tela_texto(LARGURA / 2, ALTURA / 3, 60, azul, "JOGO DA VELHA");
+    tela_texto(LARGURA / 2, ALTURA / 3, 80, azul, "JOGO DA VELHA");
     tela_texto(LARGURA / 2, ALTURA / 2, 30, branco, "Pressione Enter para continuar...");
     tela_atualiza();
     while (tela_tecla() != '\n');
@@ -137,38 +144,31 @@ void tela_vencedor_X(){
     while (tela_tecla() != '\n');
 }
 
-void jogar_novamente(){
-    bool jogar = true;
-
-    while (jogar) {
-        tela_texto(LARGURA / 2, ALTURA / 2, 60, vermelho, "Deu velha");
-        tela_texto(LARGURA / 2, ALTURA / 3, 30, branco, "Jogar novamente (y/n)?");
+bool jogar_novamente(){
+    bool jogar = false;
+    while (true) {
+        tela_texto(LARGURA / 2, ALTURA / 2, 50, vermelho, "Jogar novamente (y/n)?");
         tela_atualiza();
 
         char resposta = tela_tecla();
         if (resposta == 'n' || resposta == 'N') {
-            jogar = false;
-            break;
+            return false;
         } else if (resposta == 'y' || resposta == 'Y') {
-            inicializa_tabuleiro();
-            jogador_atual = 'X';
-            cursor_linha = 0;
-            cursor_coluna = 0;
-            return;
+            return true;
         }
     }
-
-    tela_fim();
-    exit(0); // Saída do programa caso não deseje jogar novamente
 }
 
 int main() {
-    bool jogo_ativo = true;
-
     tela_inicio(LARGURA, ALTURA, "Jogo da Velha");
-    inicializa_tabuleiro();
 
     while (true) {
+        inicializa_tabuleiro();
+        jogador_atual = 'X';
+        cursor_linha = 0;
+        cursor_coluna = 0;
+        bool jogo_ativo = true;
+
         texto_inicio();
         while (jogo_ativo) {
             desenha_tabuleiro();
@@ -176,26 +176,23 @@ int main() {
                 char vencedor = verifica_vencedor();
                 if (vencedor == 'X') {
                     desenha_tabuleiro();
-                    tela_atualiza();
                     tela_vencedor_X();
                     jogo_ativo = false;
                 } else if (vencedor == 'O') {
                     desenha_tabuleiro();
-                    tela_atualiza();
                     tela_vencedor_O();
                     jogo_ativo = false;
                 } else if (vencedor == 'E') {
                     desenha_tabuleiro();
                     tela_empate();
-                    jogar_novamente();
-                    inicializa_tabuleiro();
-                    jogador_atual = 'X';
-                    cursor_linha = 0;
-                    cursor_coluna = 0;
+                    jogo_ativo = false;
                 } else {
                     alterna_jogador();
                 }
             }
+        }
+        if (!jogar_novamente()) {
+            break;
         }
     }
 
