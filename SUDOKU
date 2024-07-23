@@ -1,0 +1,192 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
+#define LARGURA 900
+#define ALTURA 900
+#define TAM_CELULA (LARGURA / 9)
+
+cor_t preto = {0, 0, 0, 1};
+cor_t cinza = {0.9, 0.9, 0.9, 1};
+cor_t branco = {1, 1, 1, 1};
+cor_t vermelho = {1, 0, 0, 1};
+cor_t verde = {0, 1, 0, 1};
+cor_t azul = {0, 0, 1, 1};
+cor_t amarelo = {1, 1, 0, 1};
+cor_t ciano = {0, 1, 1, 1};
+cor_t magenta = {1, 0, 1, 1};
+
+cor_t get_cor_celula(int numero) {
+    switch (numero) {
+        case 1: return vermelho;
+        case 2: return verde;
+        case 3: return azul;
+        case 4: return amarelo;
+        case 5: return ciano;
+        case 6: return magenta;
+        default: return cinza;
+    }
+}
+
+int sudoku[9][9];
+
+void inicializar_tabuleiro() {
+    for (int i = 0; i < 9; ++i) {
+        for (int j = 0; j < 9; ++j) {
+            sudoku[i][j] = 0; // Inicializa todas as células como 0
+        }
+    }
+}
+
+void desenha_tabuleiro() {
+    for (int i = 0; i < 9; ++i) {
+        for (int j = 0; j < 9; ++j) {
+            ponto_t inicio = {j * TAM_CELULA, i * TAM_CELULA};
+            tamanho_t tamanho = {TAM_CELULA, TAM_CELULA};
+            retangulo_t retangulo = {inicio, tamanho};
+            cor_t cor_celula = get_cor_celula(sudoku[i][j]);
+            tela_retangulo(retangulo, 1, preto, cor_celula);
+
+            if (sudoku[i][j] != 0) {
+                char num[2];
+                snprintf(num, 2, "%d", sudoku[i][j]);
+                ponto_t pos_texto = {inicio.x + TAM_CELULA / 4, inicio.y + TAM_CELULA / 4};
+                tela_texto(pos_texto, TAM_CELULA / 2, preto, num);
+            }
+        }
+    }
+
+    // Desenha as linhas grossas
+    for (int i = 0; i <= 9; ++i) {
+        if (i % 3 == 0) {
+            ponto_t p1 = {i * TAM_CELULA, 0};
+            ponto_t p2 = {i * TAM_CELULA, ALTURA};
+            tela_linha(p1, p2, 3, preto);
+
+            p1.x = 0;
+            p1.y = i * TAM_CELULA;
+            p2.x = LARGURA;
+            p2.y = i * TAM_CELULA;
+            tela_linha(p1, p2, 3, preto);
+        }
+    }
+}
+
+bool ponto_dentro_retangulo(ponto_t p, ponto_t inicio, tamanho_t tamanho) {
+    return p.x >= inicio.x && p.x <= inicio.x + tamanho.largura &&
+           p.y >= inicio.y && p.y <= inicio.y + tamanho.altura;
+}
+
+void desenha_tela_inicio(bool *jogar, bool *ajuda, bool *sair) {
+    cor_t verde = {0, 1, 0, 1};
+    cor_t azul = {0, 0, 1, 1};
+    cor_t branco = {1, 1, 1, 1};
+    cor_t vermelho = {1, 0, 0, 1};
+
+    ponto_t centro_titulo = {LARGURA / 2, ALTURA / 4};
+    tela_texto(centro_titulo, 40, vermelho, "SUDOKU");
+
+    ponto_t centro_jogar = {LARGURA / 2, ALTURA / 2};
+    tamanho_t tamanho_botao = {100, 50}; // Tamanho estimado dos botões
+    ponto_t pos_jogar = {centro_jogar.x - tamanho_botao.largura / 2, centro_jogar.y - tamanho_botao.altura / 2};
+    tela_texto(pos_jogar, 30, azul, "JOGAR");
+    tela_texto_contorno(pos_jogar, 30, "JOGAR");
+
+    ponto_t centro_ajuda = {LARGURA / 2, ALTURA / 1.5};
+    ponto_t pos_ajuda = {centro_ajuda.x - tamanho_botao.largura / 2, centro_ajuda.y - tamanho_botao.altura / 2};
+    tela_texto(pos_ajuda, 30, azul, "AJUDA");
+    tela_texto_contorno(pos_ajuda, 30, "AJUDA");
+
+    ponto_t centro_sair = {LARGURA / 2, ALTURA / 1.2};
+    ponto_t pos_sair = {centro_sair.x - tamanho_botao.largura / 2, centro_sair.y - tamanho_botao.altura / 2};
+    tela_texto(pos_sair, 30, azul, "SAIR");
+    tela_texto_contorno(pos_sair, 30, "SAIR");
+
+    rato_t rato = tela_rato();
+    ponto_t pos_rato = {rato.posicao.x, rato.posicao.y};
+
+    if (rato.clicado[0] && ponto_dentro_retangulo(pos_rato, pos_jogar, tamanho_botao)) {
+        *jogar = true;
+    }
+    if (rato.clicado[0] && ponto_dentro_retangulo(pos_rato, pos_ajuda, tamanho_botao)) {
+        *ajuda = true;
+        // Remover ou substituir a função tela_inicializa_janela se necessário
+        // tela_inicializa_janela(600, "ajuda");
+        ponto_t pos_ajuda_texto = {LARGURA / 2, ALTURA / 2};
+        tela_texto(pos_ajuda_texto, 30, verde, "COMO JOGAR SUDOKU?");
+        tela_texto(pos_sair_texto, 20, vermelho, "VOLTAR");
+
+
+
+    }
+    if (rato.clicado[0] && ponto_dentro_retangulo(pos_rato, pos_sair, tamanho_botao)) {
+        *sair = true;
+    }
+}
+
+void desenha_tela_jogo() {
+    desenha_tabuleiro();
+}
+
+bool celula_valida(int linha, int coluna) {
+    return linha >= 0 && linha < 9 && coluna >= 0 && coluna < 9;
+}
+
+void inserir_numero(int linha, int coluna, int numero) {
+    if (celula_valida(linha, coluna) && numero >= 1 && numero <= 9) {
+        sudoku[linha][coluna] = numero;
+    }
+}
+
+int main() {
+    tamanho_t tamanho = {LARGURA, ALTURA};
+    tela_inicio(tamanho, "Sudoku");
+
+    inicializar_tabuleiro();
+
+    bool jogar = false;
+    bool ajuda = false;
+    bool sair = false;
+
+    while (!sair) {
+        tela_atualiza();
+
+        if (!jogar && !ajuda) {
+            desenha_tela_inicio(&jogar, &ajuda, &sair);
+        } else if (jogar) {
+            desenha_tela_jogo();
+
+            int linha_selecionada = -1;
+            int coluna_selecionada = -1;
+
+            rato_t rato = tela_rato();
+            char tecla = tela_tecla();
+
+            if (tecla == 'q') break;  // Pressione 'q' para sair
+
+            // Interação com o mouse
+            if (rato.clicado[0]) {
+                linha_selecionada = rato.posicao.y / TAM_CELULA;
+                coluna_selecionada = rato.posicao.x / TAM_CELULA;
+                printf("Célula selecionada: (%d, %d)\n", linha_selecionada, coluna_selecionada);
+            }
+
+            // Interação com o teclado
+            if (tecla >= '1' && tecla <= '9') {
+                int numero = tecla - '0';
+                if (linha_selecionada != -1 && coluna_selecionada != -1) {
+                    inserir_numero(linha_selecionada, coluna_selecionada, numero);
+                }
+            }
+        } else if (ajuda) {
+            // Implementar a lógica de ajuda aqui
+            printf("Ajuda selecionada\n");
+            ajuda = false; // Apenas um exemplo de retorno ao menu
+        }
+    }
+
+    tela_fim();
+    return 0;
+}
+
